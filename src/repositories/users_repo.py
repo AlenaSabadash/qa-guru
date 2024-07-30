@@ -1,8 +1,9 @@
 import json
+from pathlib import Path
+from typing import Sequence
 
 from src.models.users import UserModel
-from src.schemas.users import UserListResponse, UserCreate
-from pathlib import Path
+from src.schemas.users import UserCreate, UserListResponse
 
 
 def user_data():
@@ -11,8 +12,8 @@ def user_data():
         return json.load(file_data)
 
 
-def users_list() -> UserListResponse:
-    return UserListResponse(**user_data())
+def users_list() -> Sequence[UserModel]:
+    return [UserModel(**user) for user in user_data()]
 
 
 def get_user_by_id(user_id: int) -> UserModel | None:

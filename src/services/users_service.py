@@ -1,11 +1,13 @@
+from typing import Sequence
+
 from fastapi import HTTPException, status
 
 from src.models.users import UserModel
 from src.repositories import users_repo
-from src.schemas.users import UserListResponse, UserCreate
+from src.schemas.users import UserCreate
 
 
-async def get_users_service() -> UserListResponse:
+async def get_users_service() -> Sequence[UserModel]:
     return users_repo.users_list()
 
 
