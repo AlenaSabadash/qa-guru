@@ -8,7 +8,7 @@ from src.schemas.users import UserCreate
 
 def test_get_users_list(api_host):
     response = requests.get(f"{api_host}/api/users")
-    users = response.json().get("data")
+    users = response.json().get("items", [])
     for user in users:
         UserModel.model_validate(user)
 

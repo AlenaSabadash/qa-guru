@@ -13,7 +13,7 @@ class UserResponse(BaseModel):
 
 
 class UserListResponse(BaseModel):
-    data: List[UserModel]
+    items: List[UserModel]
 
 
 class UserCreate(BaseModel):

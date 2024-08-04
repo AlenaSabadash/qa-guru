@@ -17,7 +17,8 @@ def users_list() -> Sequence[UserModel]:
 
 
 def get_user_by_id(user_id: int) -> UserModel | None:
-    for user in UserListResponse(**user_data()).data:
+    users = UserListResponse(items=user_data())
+    for user in users.items:
         if user.id == user_id:
             return user
     return None
