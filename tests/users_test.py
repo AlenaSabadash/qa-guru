@@ -1,45 +1,49 @@
+import json
+
+import pytest
+import requests
 from fastapi import status
 from random import randint
 
-import requests
+from src.dto.user import UserRead, BaseUser
 
 host = 'http://127.0.0.1:8000'
 
 
-def test_get_users_list():
-    response = requests.get(f"{host}/api/users")
-    body = response.json()
+@pytest.mark.usefixtures("fill_test_data")
+def test_get_users_list(api_host):
+    response = requests.get(f"{api_host}/api/v1/users/")
+    users = response.json().get("items", [])
+    for user in users:
+        UserRead(**user)
+
+
+def test_get_specific_user(api_host, fill_test_data):
+    email = fill_test_data[0]["email"]
+    response = requests.get(f"{api_host}/api/v1/users/?email={email}")
+    users = response.json().get("items", [])
+
     assert response.status_code == status.HTTP_200_OK
-    assert len(body.get("data", []))
+    assert len(users)
+    assert email == users[0].get('email')
 
 
-def test_get_specific_user():
-    user_id = randint(1, 6)
-    response = requests.get(f"{host}/api/users/{user_id}")
-    user = response.json()
+@pytest.mark.parametrize("email", ["user@example666.com"])
+def test_get_specific_user_not_found(api_host, email):
+    response = requests.get(f"{api_host}/api/v1/users/?email={email}")
+    users = response.json().get("items", [])
 
-    assert user_id == user.get('id')
-
-
-def test_get_specific_user_not_found():
-    user_id = 666
-    response = requests.get(f"{host}/api/users/{user_id}")
-    user = response.json()
-
-    assert not user.get('id')
-    assert user_id != user.get('id')
+    assert response.status_code == status.HTTP_200_OK
+    assert not len(users)
 
 
-def test_create_new_user():
-    new_user_data = {
-      "email": "example@mail.com",
-      "first_name": "firstname",
-      "last_name": "lastname",
-    }
+def test_create_new_user(api_host, fill_test_data):
+    new_user = BaseUser(**fill_test_data[0])
 
-    response = requests.post(f"{host}/api/users", json=new_user_data)
-    user = response.json()
+    response = requests.post(f"{api_host}/api/v1/users/", json=new_user.dict())
+    user = BaseUser(**response.json())
 
-    assert new_user_data["email"] == user.get("email")
-    assert new_user_data["first_name"] == user.get("first_name")
-    assert new_user_data["last_name"] == user.get("last_name")
+    assert response.status_code == status.HTTP_201_CREATED
+    assert new_user.email == user.email
+    assert new_user.first_name == user.first_name
+    assert new_user.last_name == user.last_name

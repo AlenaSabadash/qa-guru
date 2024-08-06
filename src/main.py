@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.api_router import api_router
+from src.controller.http.router import api_router
 
 application = FastAPI()
 application.add_middleware(
@@ -12,8 +12,3 @@ application.add_middleware(
     allow_headers=["*"],
 )
 application.include_router(api_router)
-
-
-@application.get("/ping", tags=["Healthcheck"])
-def ping() -> dict[str, str]:
-    return {"message": "pong"}

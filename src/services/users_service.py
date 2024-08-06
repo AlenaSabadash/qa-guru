@@ -1,27 +1,38 @@
-from fastapi import HTTPException, status
+from typing import Sequence
 
-from src.models.users import UserModel
-from src.repositories import users_repo
-from src.schemas.users import UserListResponse, UserCreate
+import sqlalchemy as sa
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.config.database import context_session
+from src.dto.user import UserFilter, BaseUser
+from src.entity.user import User
+from src.repositories.repository import InjectRepository
 
 
-async def get_users_service() -> UserListResponse:
-    return users_repo.users_list()
+class UserService:
 
+    def __init__(
+        self, session: AsyncSession = Depends(context_session),
+    ) -> None:
+        self.repository = InjectRepository(User, session)
 
-async def get_user_by_id(user_id: int) -> UserModel | HTTPException:
-    user = users_repo.get_user_by_id(user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found',
+    async def create(self, dto: BaseUser) -> User:
+        user = self.repository.create(**dto.dict())
+        return await self.repository.save(user)
+
+    async def find(self, dto: UserFilter) -> Sequence[User]:
+        return await self.repository.find(
+            User.deleted_at.is_(None),
+            User.email.contains(dto.email),
         )
-    return user
 
+    async def find_one_or_fail(self, user_id: int) -> User:
+        return await self.repository.find_one_or_fail(
+            User.deleted_at.is_(None), id=user_id,
+        )
 
-async def create_user_service(user: UserCreate) -> UserCreate:
-    return UserCreate(
-        email=user.email,
-        first_name=user.first_name,
-        last_name=user.last_name,
-    )
+    async def delete(self, user_id: int) -> User:
+        user = await self.find_one_or_fail(user_id)
+        self.repository.merge(user, deleted_at=sa.func.now())
+        return await self.repository.save(user)
